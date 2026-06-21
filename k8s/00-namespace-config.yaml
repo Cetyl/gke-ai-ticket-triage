@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: triage
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: triage-config
+  namespace: triage
+data:
+  CLASSIFIER_URL: "http://classifier:8000"
+  ROUTER_URL: "http://router:8000"
+  NOTIFIER_URL: "http://notifier:8000"
+  OLLAMA_MODEL: "qwen2.5:7b"
+  # Storage backend: memory | cloudstorage | firestore | s3 | dynamodb
+  STORAGE_BACKEND: "cloudstorage"
+  GCS_BUCKET: "PROJECT_ID-tickets-poc"
+  FIRESTORE_COLLECTION: "tickets"
+---
+# Service account for Workload Identity (router needs Cloud Storage / Firestore access).
+# Bind it to a GCP service account in the runbook. For a quick POC you can delete the
+# annotation and rely on the node's default service account scopes instead.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: triage-sa
+  namespace: triage
+  annotations:
+    iam.gke.io/gcp-service-account: "triage-poc@PROJECT_ID.iam.gserviceaccount.com"

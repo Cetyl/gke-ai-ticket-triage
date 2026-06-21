@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+# never commit the real tunnel secret
+k8s/01-secret.yaml
+*.bak

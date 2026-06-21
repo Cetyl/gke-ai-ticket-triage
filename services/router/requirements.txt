@@ -1,0 +1,10 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+httpx==0.28.1
+prometheus-client==0.21.1
+pydantic==2.10.4
+# GCP backends
+google-cloud-storage==2.19.0
+google-cloud-firestore==2.20.0
+# AWS backends (used after migration; harmless to keep installed)
+boto3==1.35.90

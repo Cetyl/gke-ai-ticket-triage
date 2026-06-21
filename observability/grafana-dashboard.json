@@ -1,0 +1,94 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__requires": [
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" }
+  ],
+  "title": "AI Ticket Triage",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "10s",
+  "time": { "from": "now-30m", "to": "now" },
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Request rate by service (req/s)",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        { "expr": "sum(rate(app_requests_total[1m])) by (service)", "legendFormat": "{{service}}", "refId": "A" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "p95 request latency by service (s)",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(app_request_latency_seconds_bucket[5m])) by (le, service))", "legendFormat": "{{service}}", "refId": "A" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "p95 local AI call latency (s)",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(ai_call_latency_seconds_bucket[5m])) by (le))", "legendFormat": "qwen2.5", "refId": "A" }
+      ]
+    },
+    {
+      "type": "piechart",
+      "title": "Classifications by category",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 8 },
+      "targets": [
+        { "expr": "sum(classifications_total) by (category)", "legendFormat": "{{category}}", "refId": "A" }
+      ]
+    },
+    {
+      "type": "piechart",
+      "title": "Notifications by priority",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 8 },
+      "targets": [
+        { "expr": "sum(notifications_sent_total) by (priority)", "legendFormat": "{{priority}}", "refId": "A" }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "AI call errors (total)",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 16 },
+      "targets": [
+        { "expr": "sum(ai_call_errors_total)", "refId": "A" }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Tickets submitted (total)",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 16 },
+      "targets": [
+        { "expr": "sum(tickets_submitted_total)", "refId": "A" }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Storage write errors (total)",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 16 },
+      "targets": [
+        { "expr": "sum(storage_errors_total)", "refId": "A" }
+      ]
+    }
+  ]
+}

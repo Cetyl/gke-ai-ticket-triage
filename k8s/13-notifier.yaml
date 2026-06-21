@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notifier
+  namespace: triage
+  labels: { app: notifier, app.kubernetes.io/part-of: triage }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: notifier }
+  template:
+    metadata:
+      labels: { app: notifier }
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: notifier
+          image: REGISTRY_PLACEHOLDER/notifier:latest
+          ports:
+            - { containerPort: 8000, name: http }
+          envFrom:
+            - configMapRef: { name: triage-config }
+          resources:
+            requests: { cpu: "50m", memory: "96Mi" }
+            limits: { cpu: "250m", memory: "256Mi" }
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8000 }
+            initialDelaySeconds: 3
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8000 }
+            initialDelaySeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notifier
+  namespace: triage
+  labels: { app: notifier }
+spec:
+  selector: { app: notifier }
+  ports:
+    - { port: 8000, targetPort: 8000, name: http }

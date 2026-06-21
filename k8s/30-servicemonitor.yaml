@@ -1,0 +1,19 @@
+# Tells the kube-prometheus-stack Operator to scrape all four services.
+# Apply this AFTER installing the observability stack (see scripts/05-observability.sh).
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: triage-services
+  namespace: triage
+  labels:
+    release: kube-prometheus-stack   # must match the Helm release label
+spec:
+  namespaceSelector:
+    matchNames: ["triage"]
+  selector:
+    matchExpressions:
+      - { key: app, operator: In, values: [api-gateway, classifier, router, notifier] }
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

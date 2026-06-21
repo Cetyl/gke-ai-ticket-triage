@@ -1,0 +1,20 @@
+# OPTIONAL. Exposes the API Gateway publicly via a GCP HTTP load balancer (~$18/mo).
+# For a cost-free POC, skip this and use:  kubectl -n triage port-forward svc/api-gateway 8000:8000
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api-gateway
+  namespace: triage
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  number: 8000
