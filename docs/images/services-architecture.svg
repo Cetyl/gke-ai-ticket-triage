@@ -1,0 +1,101 @@
+<svg viewBox="0 0 700 600" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif, system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif" role="img">
+  <title>GKE ticket triage workflow with cluster boundary</title>
+  <desc>Numbered workflow. A client submits a ticket to the API Gateway inside the GKE cluster. The Gateway calls the Classifier, which calls the local Ollama model on the user's Mac over a tunnel, then the Router, which stores the ticket in Cloud Storage, then the Notifier. Prometheus and Grafana inside the cluster scrape and visualize metrics from all services.</desc>
+
+  <rect x="0" y="0" width="700" height="600" fill="#ffffff"/>
+
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f2328"/>
+    </marker>
+    <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0969da"/>
+    </marker>
+  </defs>
+
+  <style>
+    .box { fill:none; stroke:#57606a; stroke-width:1.5; }
+    .acc { fill:none; stroke:#0969da; stroke-width:1.5; }
+    .t   { fill:#1f2328; font-size:12.5px; font-weight:600; text-anchor:middle; }
+    .s   { fill:#57606a; font-size:9.5px; text-anchor:middle; }
+    .grp { fill:#57606a; font-size:11px; font-weight:700; }
+    .num { fill:#0969da; font-size:12px; font-weight:700; text-anchor:middle; }
+    .lbl { fill:#57606a; font-size:9px; text-anchor:middle; }
+    .flow{ stroke:#1f2328; stroke-width:1.6; fill:none; marker-end:url(#a); }
+    .ai  { stroke:#0969da; stroke-width:1.8; fill:none; marker-end:url(#b); marker-start:url(#b); }
+    .scr { stroke:#0969da; stroke-width:1.2; fill:none; stroke-dasharray:3 3; marker-end:url(#b); }
+    .qry { stroke:#0969da; stroke-width:1.4; fill:none; marker-end:url(#b); }
+  </style>
+
+  <rect x="40" y="92" width="440" height="310" rx="14" fill="none" stroke="#57606a" stroke-width="1.5" stroke-dasharray="7 5"/>
+  <text x="54" y="112" class="grp">GKE cluster · Google Cloud</text>
+
+  <rect x="60" y="446" width="330" height="100" rx="12" fill="none" stroke="#0969da" stroke-width="1.5"/>
+  <text x="72" y="466" fill="#0969da" font-size="11px" font-weight="700">Your MacBook (local, free AI)</text>
+
+  <path class="flow" d="M135,70 L144,130"/>
+  <path class="flow" d="M144,178 L144,200"/>
+  <path class="flow" d="M144,248 L144,270"/>
+  <path class="flow" d="M144,318 L144,340"/>
+  <path class="ai" d="M68,225 C24,270 24,420 146,476"/>
+  <path class="flow" d="M220,295 C330,330 370,430 430,470"/>
+  <path class="scr" d="M300,212 L223,156"/>
+  <path class="scr" d="M300,222 L223,225"/>
+  <path class="scr" d="M300,233 L223,295"/>
+  <path class="scr" d="M302,242 L223,365"/>
+  <path class="qry" d="M375,282 L375,250"/>
+
+  <text x="123" y="106" class="num">1</text>
+  <text x="126" y="192" class="num">2</text>
+  <text x="126" y="262" class="num">4</text>
+  <text x="126" y="332" class="num">5</text>
+  <text x="34" y="350" class="num">3</text>
+  <text x="60" y="364" class="lbl">local AI</text>
+  <text x="350" y="402" class="lbl">store</text>
+  <text x="263" y="200" class="lbl">scrapes /metrics</text>
+  <text x="398" y="270" class="lbl">query</text>
+
+  <rect class="box" x="68" y="130" width="152" height="46" rx="8"/>
+  <text x="144" y="150" class="t">API Gateway</text>
+  <text x="144" y="164" class="s">Entry point</text>
+
+  <rect class="box" x="68" y="200" width="152" height="46" rx="8"/>
+  <text x="144" y="220" class="t">Classifier</text>
+  <text x="144" y="234" class="s">Calls local AI</text>
+
+  <rect class="box" x="68" y="270" width="152" height="46" rx="8"/>
+  <text x="144" y="290" class="t">Router</text>
+  <text x="144" y="304" class="s">Prioritize + store</text>
+
+  <rect class="box" x="68" y="340" width="152" height="46" rx="8"/>
+  <text x="144" y="360" class="t">Notifier</text>
+  <text x="144" y="374" class="s">Send alert</text>
+
+  <rect class="acc" x="300" y="200" width="150" height="46" rx="8"/>
+  <text x="375" y="220" class="t">Prometheus</text>
+  <text x="375" y="234" class="s">Scrapes metrics</text>
+
+  <rect class="acc" x="300" y="282" width="150" height="46" rx="8"/>
+  <text x="375" y="302" class="t">Grafana</text>
+  <text x="375" y="316" class="s">Dashboard</text>
+
+  <rect class="box" x="60" y="24" width="150" height="46" rx="8"/>
+  <text x="135" y="44" class="t">Client / UI</text>
+  <text x="135" y="58" class="s">Submit ticket</text>
+
+  <rect class="acc" x="80" y="478" width="140" height="48" rx="8"/>
+  <text x="150" y="499" class="t">Cloudflare Tunnel</text>
+  <text x="150" y="513" class="s">Public HTTPS</text>
+
+  <rect class="acc" x="238" y="478" width="140" height="48" rx="8"/>
+  <text x="308" y="499" class="t">Ollama</text>
+  <text x="308" y="513" class="s">Qwen2.5 model</text>
+
+  <text x="430" y="446" class="grp">Managed GCP</text>
+  <rect class="box" x="430" y="452" width="160" height="50" rx="8"/>
+  <text x="510" y="473" class="t">Cloud Storage</text>
+  <text x="510" y="487" class="s">Ticket store</text>
+
+  <text x="498" y="540" fill="#57606a" font-size="9.5px">1 submit  2 classify request</text>
+  <text x="498" y="554" fill="#57606a" font-size="9.5px">3 local AI  4 route  5 notify</text>
+</svg>
