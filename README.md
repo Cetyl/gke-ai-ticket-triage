@@ -2,6 +2,8 @@
 
 An AI support ticket triage system where the **AI model runs on your own computer** and **Kubernetes in the cloud does all the processing around it**. The cloud orchestrates; your laptop does the thinking. The result: a real microservices system on Google Kubernetes Engine with **zero cost for the AI**, because the model never leaves your machine.
 
+The **same codebase runs on both Google Cloud (GKE) and AWS (EKS)**. Only the managed services and provisioning commands change, never the application code. The AWS path is in [docs/MIGRATION-TO-AWS.md](docs/MIGRATION-TO-AWS.md).
+
 ---
 
 ## The idea
@@ -11,6 +13,8 @@ Running AI models in the cloud usually means paying per token to a hosted API. T
 ---
 
 ## Architecture
+
+![Architecture](docs/images/architecture.svg)
 
 ```mermaid
 flowchart LR
@@ -231,7 +235,13 @@ With Google Cloud free trial credits this is effectively free. At normal prices 
 
 ## Migrating to AWS
 
-The same workload maps cleanly onto AWS, because Kubernetes is cloud agnostic and the cloud-specific code sits behind one storage interface (`services/router/storage.py`, which already has S3 and DynamoDB backends). What changes: GKE becomes EKS, Cloud Storage becomes S3, Firestore becomes DynamoDB, Workload Identity becomes IRSA, and `gcloud` becomes `eksctl`. The service code, the manifests, the local AI, and the dashboards carry over unchanged. See `docs/MIGRATION-TO-AWS.md`.
+The same workload runs on AWS with the **same codebase**. Kubernetes is cloud agnostic, and the only cloud-specific code sits behind one storage interface (`services/router/storage.py`, which already includes S3 and DynamoDB backends).
+
+**Stays identical:** all four service code bases, the container images, the Kubernetes manifests (except the image path), the local Ollama AI and tunnel, and the Prometheus and Grafana dashboards.
+
+**Changes (config and tooling only):** GKE to EKS, Artifact Registry to ECR, Cloud Storage to S3, Workload Identity to IRSA, and `gcloud` to `eksctl` and the `aws` CLI.
+
+Full step by step in [docs/MIGRATION-TO-AWS.md](docs/MIGRATION-TO-AWS.md).
 
 ---
 
