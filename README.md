@@ -241,7 +241,117 @@ The same workload runs on AWS with the **same codebase**. Kubernetes is cloud ag
 
 **Changes (config and tooling only):** GKE to EKS, Artifact Registry to ECR, Cloud Storage to S3, Workload Identity to IRSA, and `gcloud` to `eksctl` and the `aws` CLI.
 
-Full step by step in [docs/MIGRATION-TO-AWS.md](docs/MIGRATION-TO-AWS.md).
+Full reference also in [docs/MIGRATION-TO-AWS.md](docs/MIGRATION-TO-AWS.md).
+
+### AWS deployment, step by step
+
+Cost note: EKS charges about $0.10 per hour per cluster (no free-tier waiver), plus EC2 nodes. Delete the cluster when done. All steps run in AWS CloudShell (the browser terminal). Your Mac side (Ollama + Cloudflare tunnel) is unchanged.
+
+**0. Open CloudShell and get the code**
+
+```bash
+# install eksctl/helm if missing
+eksctl version || { curl -sSL "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_Linux_amd64.tar.gz" | tar xz -C /tmp && sudo mv /tmp/eksctl /usr/local/bin; }
+helm version  || curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+git clone https://github.com/Cetyl/gke-ai-ticket-triage.git
+cd gke-ai-ticket-triage
+
+export REGION=ap-south-1
+export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+export BUCKET=${ACCOUNT_ID}-triage-poc
+export ECR=${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com
+```
+
+**1. Keep the local AI running** (on your Mac, same as GCP):
+
+```bash
+ollama serve
+cloudflared tunnel --url http://localhost:11434 --http-host-header localhost:11434
+```
+
+**2. Build and push images to ECR**
+
+```bash
+aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ECR
+for svc in api-gateway classifier router notifier; do
+  aws ecr create-repository --repository-name triage/$svc --region $REGION 2>/dev/null || true
+  docker build -t $ECR/triage/$svc:latest services/$svc
+  docker push $ECR/triage/$svc:latest
+done
+```
+
+**3. Create the S3 bucket**
+
+```bash
+aws s3 mb s3://$BUCKET --region $REGION
+```
+
+**4. Create the EKS cluster** (15 to 20 minutes)
+
+```bash
+eksctl create cluster --name triage-poc --region $REGION \
+  --managed --spot --instance-types t3.medium --nodes 2 --with-oidc
+kubectl get nodes
+```
+
+**5. Pod identity (IRSA) for S3**
+
+```bash
+kubectl create namespace triage
+
+cat > /tmp/triage-s3.json <<EOF
+{ "Version":"2012-10-17","Statement":[{"Effect":"Allow",
+  "Action":["s3:GetObject","s3:PutObject","s3:ListBucket"],
+  "Resource":["arn:aws:s3:::${BUCKET}","arn:aws:s3:::${BUCKET}/*"]}]}
+EOF
+aws iam create-policy --policy-name triage-s3 --policy-document file:///tmp/triage-s3.json
+
+eksctl create iamserviceaccount --cluster triage-poc --region $REGION \
+  --namespace triage --name triage-sa \
+  --attach-policy-arn arn:aws:iam::${ACCOUNT_ID}:policy/triage-s3 --approve
+```
+
+**6. Adjust config and deploy.** Point images at ECR, set the storage backend to S3, and remove the GCP service-account block from `k8s/00-namespace-config.yaml` (eksctl owns `triage-sa` now). In that ConfigMap set `STORAGE_BACKEND: "s3"` and add `S3_BUCKET: "<your bucket>"`.
+
+```bash
+sed -i "s|REGISTRY_PLACEHOLDER|$ECR/triage|g" k8s/10-*.yaml k8s/11-*.yaml k8s/12-*.yaml k8s/13-*.yaml
+
+kubectl apply -f k8s/00-namespace-config.yaml   # namespace + configmap (SA block removed)
+kubectl apply -f k8s/10-api-gateway.yaml -f k8s/11-classifier.yaml \
+              -f k8s/12-router.yaml -f k8s/13-notifier.yaml -f k8s/21-hpa.yaml
+
+kubectl -n triage create secret generic triage-secrets \
+  --from-literal=OLLAMA_BASE_URL=https://<your-tunnel>.trycloudflare.com
+
+kubectl -n triage get pods -w
+```
+
+**7. Observability** (identical to GCP)
+
+```bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+  --namespace monitoring --create-namespace
+kubectl apply -f k8s/30-servicemonitor.yaml
+```
+
+**8. Test**
+
+```bash
+kubectl -n triage port-forward svc/api-gateway 8000:8000 &
+curl -X POST http://localhost:8000/tickets -H "Content-Type: application/json" \
+  -d '{"subject":"Payment failed","body":"Charged twice, urgent refund needed."}'
+aws s3 ls s3://$BUCKET/tickets/
+```
+
+**9. Cleanup** (EKS is not free, do not skip)
+
+```bash
+eksctl delete cluster --name triage-poc --region $REGION
+aws s3 rb s3://$BUCKET --force
+```
 
 ---
 
